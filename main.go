@@ -59,7 +59,7 @@ func main() {
 	input := flag.String("i", "./input.jpg", "The input file")
 	width := flag.Int("w", defaultWidth, "Set a custom width")
 	height := flag.Int("h", defaultHeight, "Set a custom height")
-	square := flag.Bool("square", false, "Use square aspect ratio")
+	square := flag.Bool("s", false, "Use square aspect ratio")
 
 	flag.Parse()
 

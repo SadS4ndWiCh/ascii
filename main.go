@@ -1,11 +1,15 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/sunshineplan/imgconv"
 	"golang.org/x/term"
@@ -39,14 +43,59 @@ func imageToAscii(src string, w int, h int) (string, error) {
 			idx := int(intensity / 255 * float64(CHARACTERS_LENGTH-1))
 
 			buf.WriteByte(CHARACTERS[idx])
-			buf.WriteByte(CHARACTERS[idx])
-			buf.WriteByte(CHARACTERS[idx])
 		}
 
 		buf.WriteByte('\n')
 	}
 
 	return buf.String(), nil
+}
+
+func videoToAscii(src string, w int, h int) error {
+	if err := os.Mkdir("ascii-tmp", 0764); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+	}
+
+	splitInChunksCmd := exec.Command(
+		"ffmpeg.exe",
+		"-i",
+		src,
+		"-r",
+		"30",
+		"./ascii-tmp/%05d.jpg",
+	)
+
+	_, err := splitInChunksCmd.Output()
+	if err != nil {
+		return err
+	}
+
+	e, err := os.ReadDir("./ascii-tmp")
+	if err != nil {
+		return err
+	}
+
+	frames := len(e)
+
+	for frame := range frames {
+		frameSrc := fmt.Sprintf("./ascii-tmp/%05d.jpg", frame)
+
+		buf, err := imageToAscii(frameSrc, w, h)
+		if err != nil {
+			continue
+		}
+
+		fmt.Printf("\033[0;0H%s", buf)
+		time.Sleep(time.Second / 60)
+	}
+
+	if err := os.RemoveAll("./ascii-tmp"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
@@ -64,20 +113,24 @@ func main() {
 	flag.Parse()
 
 	if *square {
-		*width = *height
+		*width = *height * 3
 	}
 
-	ext := strings.Split(*input, ".")[1]
+	ext := filepath.Ext(*input)
 
 	switch ext {
-	case "jpg", "jpeg", "png":
+	case ".jpg", ".jpeg", ".png":
 		buf, err := imageToAscii(*input, *width, *height)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		fmt.Println(buf)
+	case ".mp4", ".gif":
+		if err := videoToAscii(*input, *width, *height); err != nil {
+			log.Fatal(err)
+		}
 	default:
-		fmt.Printf("[-] Invalid format: .%s\n", ext)
+		fmt.Printf("[-] Invalid format: %s\n", ext)
 	}
 }

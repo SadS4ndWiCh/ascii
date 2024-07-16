@@ -17,6 +17,6 @@ ascii -i <INPUT> [-w <WIDTH>] [-h <HEIGHT>] [-s]
 
 ### 🧩 Supported formats
 
-| Image          | Video |
-| -------------- | ----- |
-| png, jpg, jpeg | -     |
+| Image          | Video    |
+| -------------- | -------- |
+| png, jpg, jpeg | mp4, gif |

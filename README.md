@@ -1,5 +1,7 @@
 # 🩰 ascii
 
+![Example dog in ascii](./.github/screenshots/dog.png)
+
 Convert images and videos to ascii.
 
 ## 🥌 Usage

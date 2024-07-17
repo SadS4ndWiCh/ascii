@@ -15,7 +15,9 @@ import (
 	"golang.org/x/term"
 )
 
-const CHARACTERS = " .:coPO?@■"
+// const CHARACTERS = " .:coPO?@■"
+
+const CHARACTERS = " .:-=+*oO#%8@■"
 const CHARACTERS_LENGTH = len(CHARACTERS)
 
 func rgbtogray(r, g, b float64) float64 {
@@ -79,6 +81,13 @@ func videoToAscii(src string, w int, h int) error {
 
 	frames := len(e)
 
+	name := filepath.Base(src)
+	file, err := os.Create(fmt.Sprintf("%s.ascii", name))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	for frame := range frames {
 		frameSrc := fmt.Sprintf("./ascii-tmp/%05d.jpg", frame)
 
@@ -87,12 +96,36 @@ func videoToAscii(src string, w int, h int) error {
 			continue
 		}
 
-		fmt.Printf("\033[0;0H%s", buf)
-		time.Sleep(time.Second / 60)
+		file.Write([]byte(buf))
 	}
 
 	if err := os.RemoveAll("./ascii-tmp"); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func playVideo(src string, w int, h int) error {
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	offset := (w * h) + h
+	buf := make([]byte, offset)
+
+	for {
+		n, err := file.Read(buf)
+		if err != nil {
+			return err
+		} else if n == 0 {
+			break
+		}
+
+		fmt.Printf("\033[0;0H%s", buf)
+		time.Sleep(time.Second / 30)
 	}
 
 	return nil
@@ -128,6 +161,10 @@ func main() {
 		fmt.Println(buf)
 	case ".mp4", ".gif":
 		if err := videoToAscii(*input, *width, *height); err != nil {
+			log.Fatal(err)
+		}
+	case ".ascii":
+		if err := playVideo(*input, *width, *height); err != nil {
 			log.Fatal(err)
 		}
 	default:

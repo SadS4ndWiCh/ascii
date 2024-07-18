@@ -124,7 +124,7 @@ func playVideo(src string, w int, h int) error {
 			break
 		}
 
-		fmt.Printf("\033[0;0H%s", buf)
+		fmt.Printf("\033[0;0H%s", strings.TrimSpace(string(buf)))
 		time.Sleep(time.Second / 30)
 	}
 

@@ -61,7 +61,7 @@ func videoToAscii(src string, w int, h int) error {
 	}
 
 	splitInChunksCmd := exec.Command(
-		"ffmpeg.exe",
+		"ffmpeg",
 		"-i",
 		src,
 		"-r",
@@ -142,10 +142,13 @@ func main() {
 	width := flag.Int("w", defaultWidth, "Set a custom width")
 	height := flag.Int("h", defaultHeight, "Set a custom height")
 	square := flag.Bool("s", false, "Use square aspect ratio")
+	portrait := flag.Bool("p", false, "Use portrait aspect ratio")
 
 	flag.Parse()
 
-	if *square {
+	if *portrait {
+		*width = int(float64(*height) * 1.5)
+	} else if *square {
 		*width = *height * 3
 	}
 

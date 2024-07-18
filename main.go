@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -117,11 +118,12 @@ func playVideo(src string, w int, h int) error {
 	buf := make([]byte, offset)
 
 	for {
-		n, err := file.Read(buf)
-		if err != nil {
+		if _, err := file.Read(buf); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			return err
-		} else if n == 0 {
-			break
 		}
 
 		fmt.Printf("\033[0;0H%s", strings.TrimSpace(string(buf)))

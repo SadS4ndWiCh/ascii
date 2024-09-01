@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/SadS4ndWiCh/ascii/internal/ascii"
+	"github.com/SadS4ndWiCh/ascii/internal/bytes"
 	"golang.org/x/term"
 )
 
@@ -101,6 +102,32 @@ func (cmd *VideoCommand) Run() error {
 	}
 	defer asciiFile.Close()
 
+	/*
+		`.ascii` file structure
+
+		 9     5 4     3 2      1 0      0
+		+-------+-------+--------+--------+
+		| ascii | width | height | aspect |
+		+-------+-------+--------+--------+
+		|          ASCII FRAMES           |
+		|    (width * height) + height    |
+		+---------------------------------+
+	*/
+	asciiWriter := bytes.NewWriter(asciiFile)
+
+	asciiWriter.WriteString("ascii")
+	asciiWriter.WriteInt16(int16(cmd.args.width))
+	asciiWriter.WriteInt16(int16(cmd.args.height))
+
+	switch cmd.args.aspect {
+	case "s", "square":
+		asciiWriter.WriteInt8(1)
+	case "p", "portrait":
+		asciiWriter.WriteInt8(2)
+	default:
+		asciiWriter.WriteInt8(0)
+	}
+
 	for _, frameSrc := range frames {
 		img, err := ascii.FromImage(frameSrc, cmd.args.width, cmd.args.height)
 		if err != nil {
@@ -112,7 +139,7 @@ func (cmd *VideoCommand) Run() error {
 			continue
 		}
 
-		asciiFile.Write([]byte(buf))
+		asciiWriter.WriteString(buf)
 	}
 
 	return nil

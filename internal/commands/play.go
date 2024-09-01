@@ -10,14 +10,11 @@ import (
 	"time"
 	"unicode"
 
-	"golang.org/x/term"
+	"github.com/SadS4ndWiCh/ascii/internal/bytes"
 )
 
 type playArgs struct {
-	input  string
-	width  int
-	height int
-	aspect string
+	input string
 }
 
 type PlayCommand struct {
@@ -30,16 +27,7 @@ func NewPlayCommand() *PlayCommand {
 		fs: flag.NewFlagSet("play", flag.ContinueOnError),
 	}
 
-	defaultWidth, defaultHeight, err := term.GetSize(int(os.Stdin.Fd()))
-	if err != nil {
-		defaultWidth = 166
-		defaultHeight = 37
-	}
-
 	cmd.fs.StringVar(&cmd.args.input, "i", "./input.mp4", "The input file")
-	cmd.fs.IntVar(&cmd.args.width, "w", defaultWidth, "Set a custom width")
-	cmd.fs.IntVar(&cmd.args.height, "h", defaultHeight, "Set a custom height")
-	cmd.fs.StringVar(&cmd.args.aspect, "a", "default", "The aspect ratio (s/square, p/portrait)")
 
 	return cmd
 }
@@ -53,21 +41,29 @@ func (cmd *PlayCommand) Init(args []string) error {
 }
 
 func (cmd *PlayCommand) Run() error {
-	switch cmd.args.aspect {
-	case "s", "square":
-		cmd.args.width = cmd.args.height * 3
-	case "p", "portrait":
-		cmd.args.width = int(float64(cmd.args.height) * 1.5)
-	}
-
 	file, err := os.Open(cmd.args.input)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	offset := (cmd.args.width * cmd.args.height) + cmd.args.height
-	buf := make([]byte, offset)
+	asciiReader := bytes.NewReader(file)
+
+	signature, err := asciiReader.ReadBytes(5)
+	if err != nil {
+		return err
+	}
+
+	if string(signature) != "ascii" {
+		return errors.New("invalid ascii file")
+	}
+
+	width, _ := asciiReader.ReadInt16()
+	height, _ := asciiReader.ReadInt16()
+	asciiReader.ReadInt8() // ignore aspect
+
+	length := width*height + height
+	buf := make([]byte, length)
 
 	for {
 		if _, err := file.Read(buf); err != nil {
